@@ -18,7 +18,7 @@ namespace BlockChain
 
         public void AcceptBlock(IBlock block)
         {
-            // Genesis block
+            // First block?
             if (HeadBlock == null)
             {
                 HeadBlock = block;
@@ -31,7 +31,12 @@ namespace BlockChain
 
         public void VerifyChain()
         {
-            throw new NotImplementedException();
+            if(HeadBlock == null)
+            {
+                throw new InvalidOperationException("Genesis block not set");
+            }
+
+            bool isValid = HeadBlock.IsValidChain(null, true);
         }
     }
 }

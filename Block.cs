@@ -21,15 +21,13 @@ namespace BlockChain
         public string PreviousBlockHash { get; set; }
         public IBlock NextBlock { get; set; }
 
-        public Block(string claimNumber, 
+        public Block(int blockNumber,
+                    string claimNumber, 
                     decimal settlementAmount, 
                     DateTime settlementDate, 
                     string carRegistration, 
                     int mileage, 
                     ClaimType claimType, 
-                    int blockNumber, 
-                    string blockHash, 
-                    string previousBlockHash, 
                     IBlock parent)
         {
             BlockNumber = blockNumber;
@@ -39,8 +37,6 @@ namespace BlockChain
             CarRegistration = carRegistration;
             Mileage = mileage;
             ClaimType = claimType;
-            BlockHash = blockHash;
-            PreviousBlockHash = previousBlockHash;
             CreatedDate = DateTime.UtcNow;
             SetBlockHash(parent);
         }
