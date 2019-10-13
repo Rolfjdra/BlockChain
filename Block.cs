@@ -2,6 +2,8 @@
 using System;
 using System.Text;
 using System.Security.Cryptography;
+using BlockChain.Utility;
+
 namespace BlockChain
 {
     class Block : IBlock
@@ -19,23 +21,28 @@ namespace BlockChain
         public string PreviousBlockHash { get; set; }
         public IBlock NextBlock { get; set; }
 
-        public Block(int blockNumber,
-                     string claimNumber, 
-                     decimal settlementAmount, 
-                     DateTime settlementDate, 
-                     string carRegistration, 
-                     int mileage, 
-                     ClaimType claimType,
-                     IBlock parent)
+        public Block(string claimNumber, 
+                    decimal settlementAmount, 
+                    DateTime settlementDate, 
+                    string carRegistration, 
+                    int mileage, 
+                    ClaimType claimType, 
+                    int blockNumber, 
+                    string blockHash, 
+                    string previousBlockHash, 
+                    IBlock parent)
         {
+            BlockNumber = blockNumber;
             ClaimNumber = claimNumber;
             SettlementAmount = settlementAmount;
             SettlementDate = settlementDate;
             CarRegistration = carRegistration;
             Mileage = mileage;
             ClaimType = claimType;
-            BlockNumber = blockNumber;
-            // Add methods?
+            BlockHash = blockHash;
+            PreviousBlockHash = previousBlockHash;
+            CreatedDate = DateTime.UtcNow;
+            SetBlockHash(parent);
         }
 
         public string CalculateBlockHash(string previousBlockHash)
@@ -44,17 +51,60 @@ namespace BlockChain
             string blockHeader = BlockNumber + CreatedDate.ToString() + previousBlockHash;
             string combined = transactionHash + blockHeader;
 
-            return null; //Convert.ToBase64String(HashData.ComputeHash256(Encoding.UTF8.GetBytes(combined));
-        }
-
-        public bool IsValidChain(string prevBlockHash, bool verbose)
-        {
-            throw new NotImplementedException();
+            return Convert.ToBase64String(HashData.ComputeHashSha256(Encoding.UTF8.GetBytes(combined)));
         }
 
         public void SetBlockHash(IBlock parent)
         {
-            throw new NotImplementedException();
+
+            if(parent != null)
+            {
+                PreviousBlockHash = parent.BlockHash;
+                parent.NextBlock = this;
+            }
+            else
+            {
+                PreviousBlockHash = null;
+            }
+            BlockHash = CalculateBlockHash(PreviousBlockHash);
+        }
+
+        public bool IsValidChain(string prevBlockHash, bool verbose)
+        {
+            bool isValid = true;
+            string newBlockHash = CalculateBlockHash(prevBlockHash);
+            if(newBlockHash != BlockHash)
+            {
+                isValid = false;
+            }
+            else
+            {
+                isValid |= PreviousBlockHash == prevBlockHash;
+            }
+            PrintVerificationMessage(verbose, isValid);
+
+
+            if (NextBlock !=null)
+            {
+                return NextBlock.IsValidChain(newBlockHash, verbose);
+            }
+
+            return isValid;
+        }
+
+        private void PrintVerificationMessage(bool verbose,bool isValid)
+        {
+            if (verbose)
+            {
+                if (!isValid)
+                {
+                    Console.WriteLine("Block Number " + BlockNumber + ": Failed Verification!");
+                }
+                else
+                {
+                    Console.WriteLine("Block Number " + BlockNumber + ": PASS Verification!");
+                }
+            }
         }
     }
 }
