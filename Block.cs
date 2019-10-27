@@ -3,49 +3,38 @@ using System;
 using System.Text;
 using System.Security.Cryptography;
 using BlockChain.Utility;
+using System.Collections.Generic;
+using Clifton.Blockchain;
 
 namespace BlockChain
 {
     class Block : IBlock
 
     {
-        public string ClaimNumber { get; set; }
-        public decimal SettlementAmount { get; set; }
-        public DateTime SettlementDate { get; set; }
-        public string CarRegistration { get; set; }
-        public int Mileage { get; set; }
-        public ClaimType ClaimType { get; set; }
+        public List<ITransaction> Transaction { get; private set; }
         public int BlockNumber { get; private set; }
         public DateTime CreatedDate { get; set; }
         public string BlockHash { get; private set; }
         public string PreviousBlockHash { get; set; }
         public IBlock NextBlock { get; set; }
+        private MerkleTree merkleTree = new MerkleTree();
 
-        public Block(int blockNumber,
-                    string claimNumber, 
-                    decimal settlementAmount, 
-                    DateTime settlementDate, 
-                    string carRegistration, 
-                    int mileage, 
-                    ClaimType claimType, 
-                    IBlock parent)
+        public Block(int blockNumber) 
         {
+            Transaction = new List<ITransaction>();
             BlockNumber = blockNumber;
-            ClaimNumber = claimNumber;
-            SettlementAmount = settlementAmount;
-            SettlementDate = settlementDate;
-            CarRegistration = carRegistration;
-            Mileage = mileage;
-            ClaimType = claimType;
             CreatedDate = DateTime.UtcNow;
-            SetBlockHash(parent);
+        }
+
+        public void AddTransaction(ITransaction transaction)
+        {
+            Transaction.Add(transaction);
         }
 
         public string CalculateBlockHash(string previousBlockHash)
         {
-            string transactionHash = ClaimNumber + SettlementAmount + SettlementDate + CarRegistration + Mileage + ClaimType;
             string blockHeader = BlockNumber + CreatedDate.ToString() + previousBlockHash;
-            string combined = transactionHash + blockHeader;
+            string combined = merkleTree.RootNode + blockHeader;
 
             return Convert.ToBase64String(HashData.ComputeHashSha256(Encoding.UTF8.GetBytes(combined)));
         }
@@ -62,12 +51,27 @@ namespace BlockChain
             {
                 PreviousBlockHash = null;
             }
+
+            BuildMerkleTree();
             BlockHash = CalculateBlockHash(PreviousBlockHash);
+        }
+        private void BuildMerkleTree()
+        {
+            merkleTree = new MerkleTree();
+            foreach(ITransaction transaction in Transaction)
+            {
+                merkleTree.AppendLeaf(MerkleHash.Create(transaction.CalculateTransactionHash()));
+            }
+
+            merkleTree.BuildTree();
         }
 
         public bool IsValidChain(string prevBlockHash, bool verbose)
         {
             bool isValid = true;
+
+            BuildMerkleTree();
+
             string newBlockHash = CalculateBlockHash(prevBlockHash);
             if(newBlockHash != BlockHash)
             {

@@ -6,14 +6,8 @@ namespace BlockChain.Interfaces
 {
     public interface IBlock
     {
-        // Adding transaction data
-        public String ClaimNumber { get; set; }
-        public decimal SettlementAmount { get; set; }
-        public DateTime SettlementDate { get; set; }
-        public string CarRegistration { get; set; }
-        public int Mileage { get; set; }
-        public ClaimType ClaimType { get; set; }
-
+        //List of transactions
+        List<ITransaction> Transaction { get; }
         //Adding Header data
         public int BlockNumber { get; }
         public DateTime CreatedDate { get; set; }
